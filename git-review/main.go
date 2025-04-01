@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"dagger/git-review/internal/dagger"
-	"fmt"
 )
 
 type GitReview struct{}
@@ -38,20 +37,21 @@ func (m *GitReview) Review(
 		// HACK: until fix for dagger/dagger#7637 is merged
 		WithExec([]string{"git", "fetch", "--unshallow"})
 
-	diff, err := ctr.
+	patch, err := ctr.
 		WithExec([]string{"git", "log", "-p", baseCommit + ".." + refCommit}).
 		Stdout(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	if additionalInstructions == "" {
-		additionalInstructions = fmt.Sprintf("\n\nAdditional Instructions: %s\n", additionalInstructions)
+	env := dag.Env().
+		WithStringInput("patch", patch, "the git patch file with all commits in the target pull request")
+	if additionalInstructions != "" {
+		env = env.WithStringInput("additionalInstructions", additionalInstructions, "any additional instructions to consider")
 	}
 
 	llm := dag.LLM().
-		WithPromptVar("diff", diff).
-		WithPromptVar("additionalInstructions", additionalInstructions).
+		WithEnv(env).
 		WithPrompt(`Review the following git commit log.
 
 Git log:
@@ -80,4 +80,16 @@ Only output the review, nothing else.`)
 	}
 
 	return review, nil
+}
+
+func (m *GitReview) ReviewPR(
+	ctx context.Context,
+
+	ref string,
+
+	// +optional
+	additionalInstructions string,
+) (string, error) {
+	pr := dag.Pr().Open(ref)
+	return m.Review(ctx, pr.AsBaseRef(), pr.AsHeadRef(), additionalInstructions)
 }

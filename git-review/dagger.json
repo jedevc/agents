@@ -1,6 +1,6 @@
 {
   "name": "git-review",
-  "engineVersion": "v0.17.2",
+  "engineVersion": "v0.18.0",
   "sdk": {
     "source": "go"
   },
@@ -9,6 +9,11 @@
       "name": "alpine",
       "source": "github.com/dagger/dagger/modules/alpine",
       "pin": "681fd1e881fb559a19eaa281e99d2d55902d24c7"
+    },
+    {
+      "name": "pr",
+      "source": "github.com/jedevc/daggerverse/pr",
+      "pin": "573c96e888a0273a2bc434c83a3fcb953243a2f8"
     }
   ]
 }
